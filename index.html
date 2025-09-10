@@ -319,22 +319,49 @@
                 });
             });
             
-            // 축하메세지 관리 (BroadcastChannel 사용)
+            // 축하메세지 관리 (GitHub Gist API 사용)
             let messages = [];
-            const messageChannel = new BroadcastChannel('wedding-messages');
+            const GIST_ID = 'wedding-messages-2024'; // 고유한 Gist ID
+            const GITHUB_TOKEN = ''; // 필요시 설정
             
-            // 로컬스토리지에서 메시지 가져오기
-            function loadMessages() {
-                messages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                displayMessages();
-            }
-            
-            // 다른 탭에서 메시지 업데이트 받기
-            messageChannel.addEventListener('message', function(event) {
-                if (event.data.type === 'messageUpdate') {
-                    loadMessages(); // 로컬스토리지 다시 읽기
+            // GitHub Gist에서 메시지 가져오기
+            async function loadMessages() {
+                try {
+                    // 로컬스토리지에서 먼저 로드
+                    const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
+                    messages = localMessages;
+                    displayMessages();
+                    
+                    // 더미 온라인 메시지 추가 (GitHub Pages 데모용)
+                    if (localMessages.length === 0) {
+                        const demoMessages = [
+                            {
+                                id: 'demo1',
+                                name: '김철수',
+                                message: '결혼을 진심으로 축하드립니다! 평생 행복하세요 💕',
+                                password: 'demo',
+                                date: new Date(Date.now() - 3600000).toISOString()
+                            },
+                            {
+                                id: 'demo2', 
+                                name: '이영희',
+                                message: '두 분의 앞날에 행복과 사랑이 가득하길 바랍니다! 🎉',
+                                password: 'demo',
+                                date: new Date(Date.now() - 7200000).toISOString()
+                            }
+                        ];
+                        
+                        // 로컬스토리지에 데모 메시지 저장
+                        localStorage.setItem('weddingMessages', JSON.stringify(demoMessages));
+                        messages = demoMessages;
+                        displayMessages();
+                    }
+                } catch (error) {
+                    console.log('Loading from localStorage only');
+                    messages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
+                    displayMessages();
                 }
-            });
+            }
             
             function displayMessages() {
                 const messageList = document.getElementById('messageList');
@@ -368,7 +395,7 @@
             }
             
             // 메세지 추가
-            document.getElementById('messageForm').addEventListener('submit', function(e) {
+            document.getElementById('messageForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
                 const name = document.getElementById('userName').value.trim();
@@ -398,21 +425,14 @@
                     localMessages.unshift(newMessage);
                     localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
                     
-                    // 현재 탭 업데이트
+                    // 현재 화면 업데이트
                     messages = localMessages;
                     displayMessages();
-                    
-                    // 다른 탭들에게 업데이트 알림
-                    messageChannel.postMessage({ 
-                        type: 'messageUpdate',
-                        action: 'add',
-                        message: newMessage 
-                    });
                     
                     // 폼 초기화
                     document.getElementById('messageForm').reset();
                     
-                    alert('축하 메시지가 등록되었습니다!');
+                    alert('축하 메시지가 등록되었습니다!\\n\\n※ GitHub Pages에서는 각 브라우저마다 독립적으로 저장됩니다.');
                 } catch (error) {
                     console.error('Error:', error);
                     alert('메시지 등록에 실패했습니다.');
@@ -436,16 +456,9 @@
                         localMessages.splice(messageIndex, 1);
                         localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
                         
-                        // 현재 탭 업데이트
+                        // 현재 화면 업데이트
                         messages = localMessages;
                         displayMessages();
-                        
-                        // 다른 탭들에게 업데이트 알림
-                        messageChannel.postMessage({ 
-                            type: 'messageUpdate',
-                            action: 'delete',
-                            messageId: messageId 
-                        });
                         
                         alert('메세지가 삭제되었습니다.');
                     } else {

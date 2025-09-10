@@ -14,7 +14,10 @@
         <link href="https://fonts.googleapis.com/css?family=Nunito:200,200i,300,300i,400,400i,600,600i,700,700i,800,800i,900,900i" rel="stylesheet" />
         <!-- Core theme CSS (includes Bootstrap)-->
         <link href="css/styles.css" rel="stylesheet" />
-        <!-- 카카오맵 API 제거 - 외부 링크로 대체 -->
+        
+        <!-- Firebase SDK -->
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+        <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
     </head>
     <body id="page-top">
         <!-- 배경음악 플레이어 -->
@@ -181,16 +184,16 @@
             </div>
         </section>
         
-        <!-- 축하 메세지 섹션 -->
+        <!-- 축하메세지 섹션 -->
         <section class="about-section text-center" id="congratulations">
             <div class="container px-4 px-lg-5">
                 <div class="row gx-4 gx-lg-5 justify-content-center">
                     <div class="col-lg-8">
-                        <h2 class="text-white mb-4">축하 메세지</h2>
-                        <p class="text-white-50 mb-5">소중한 축하의 말씀을 남겨주세요.</p>
+                        <h2 class="text-white mb-4">축하메세지</h2>
+                        <p class="text-white-50 mb-4">소중한 축하의 말씀을 남겨주세요. 모든 분들이 실시간으로 확인할 수 있습니다.</p>
                         
                         <!-- 메세지 입력 폼 -->
-                        <div class="card mb-4" style="background: rgba(255,255,255,0.1); border: none;">
+                        <div class="card mb-4" style="background: rgba(255,255,255,0.9); border: none;">
                             <div class="card-body">
                                 <form id="messageForm">
                                     <div class="row mb-3">
@@ -198,19 +201,19 @@
                                             <input type="text" class="form-control" id="userName" placeholder="이름" required>
                                         </div>
                                         <div class="col-md-6">
-                                            <input type="password" class="form-control" id="userPassword" placeholder="비밀번호 (수정/삭제용)" required>
+                                            <input type="password" class="form-control" id="userPassword" placeholder="비밀번호 (삭제용)" required>
                                         </div>
                                     </div>
                                     <div class="mb-3">
                                         <textarea class="form-control" id="userMessage" rows="3" placeholder="축하 메세지를 입력해주세요" required></textarea>
                                     </div>
-                                    <button type="submit" class="btn btn-primary">메세지 등록</button>
+                                    <button type="submit" class="btn btn-primary">메세지 남기기</button>
                                 </form>
                             </div>
                         </div>
                         
                         <!-- 메세지 목록 -->
-                        <div id="messageList" class="text-start">
+                        <div id="messageList">
                             <!-- 메세지들이 여기에 표시됩니다 -->
                         </div>
                     </div>
@@ -319,85 +322,46 @@
                 });
             });
             
-            // 축하메세지 관리 (JSONBin.io 사용)
-            let messages = [];
-            const JSONBIN_BIN_ID = '673ffc31acd3cb34a8af41ce'; // JSONBin.io Bin ID
-            const JSONBIN_ACCESS_KEY = '$2a$10$H9eKr4CjDjxfU8vJQEaLWOAKO3TZo9tn.L2nJdvE7VYg7QBX8x4Gq'; // JSONBin.io Access Key
+            // Firebase 설정
+            const firebaseConfig = {
+                apiKey: "AIzaSyB9OO1AMPdFlWsP7acxOsOJhcZrMrvO9UY",
+                authDomain: "wedding-messages-99061.firebaseapp.com",
+                databaseURL: "https://wedding-messages-99061-default-rtdb.firebaseio.com",
+                projectId: "wedding-messages-99061",
+                storageBucket: "wedding-messages-99061.firebasestorage.app",
+                messagingSenderId: "199378567303",
+                appId: "1:199378567303:web:faa02250c952b5c17df822",
+                measurementId: "G-F85TQ5LJ7L"
+            };
             
-            // JSONBin에서 메시지 가져오기
-            async function loadMessages() {
+            // Firebase 초기화
+            firebase.initializeApp(firebaseConfig);
+            const database = firebase.database();
+            const messagesRef = database.ref('congratulations');
+            
+            let messages = {};
+            
+            // 실시간 메세지 로드
+            function initializeFirebase() {
                 try {
-                    console.log('Loading messages from JSONBin...');
-                    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
-                        headers: {
-                            'X-Access-Key': JSONBIN_ACCESS_KEY
-                        }
-                    });
-                    
-                    if (response.ok) {
-                        const data = await response.json();
-                        messages = data.record || [];
-                        console.log('Loaded messages:', messages);
+                    // 실시간 리스너 설정
+                    messagesRef.on('value', (snapshot) => {
+                        messages = snapshot.val() || {};
                         displayMessages();
-                        
-                        // 로컬스토리지에도 백업 저장
-                        localStorage.setItem('weddingMessages', JSON.stringify(messages));
-                    } else {
-                        throw new Error('Failed to load from JSONBin');
-                    }
-                } catch (error) {
-                    console.error('Error loading from JSONBin:', error);
-                    // JSONBin 실패 시 로컬스토리지에서 로드
-                    const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                    
-                    // 첫 방문자를 위한 데모 메시지
-                    if (localMessages.length === 0) {
-                        const demoMessages = [
-                            {
-                                id: 'demo1',
-                                name: '김철수',
-                                message: '결혼을 진심으로 축하드립니다! 평생 행복하세요 💕',
-                                password: 'demo',
-                                date: new Date(Date.now() - 3600000).toISOString()
-                            },
-                            {
-                                id: 'demo2', 
-                                name: '이영희',
-                                message: '두 분의 앞날에 행복과 사랑이 가득하길 바랍니다! 🎉',
-                                password: 'demo',
-                                date: new Date(Date.now() - 7200000).toISOString()
-                            }
-                        ];
-                        messages = demoMessages;
-                        localStorage.setItem('weddingMessages', JSON.stringify(demoMessages));
-                    } else {
-                        messages = localMessages;
-                    }
-                    displayMessages();
-                }
-            }
-            
-            // JSONBin에 메시지 저장
-            async function saveMessagesToServer(messagesData) {
-                try {
-                    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
-                        method: 'PUT',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-Access-Key': JSONBIN_ACCESS_KEY
-                        },
-                        body: JSON.stringify(messagesData)
+                    }, (error) => {
+                        console.error('Firebase 연결 오류:', error);
+                        const messageList = document.getElementById('messageList');
+                        messageList.innerHTML = `
+                            <div class="alert alert-info" role="alert">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>오프라인 모드</strong><br/>
+                                Firebase 연결을 확인하고 있습니다...<br/>
+                                <small class="text-muted">인터넷 연결을 확인해주세요.</small>
+                            </div>
+                        `;
                     });
-                    
-                    if (response.ok) {
-                        console.log('Messages saved to JSONBin successfully');
-                        return true;
-                    } else {
-                        throw new Error('Failed to save to JSONBin');
-                    }
                 } catch (error) {
-                    console.error('Error saving to JSONBin:', error);
-                    return false;
+                    console.error('Firebase 초기화 실패:', error);
                 }
             }
             
@@ -405,23 +369,37 @@
                 const messageList = document.getElementById('messageList');
                 messageList.innerHTML = '';
                 
-                if (messages.length === 0) {
-                    messageList.innerHTML = '<p class="text-white-50 text-center">아직 축하 메시지가 없습니다. 첫 번째 메시지를 남겨보세요!</p>';
+                // 메세지를 배열로 변환하고 날짜순 정렬
+                const messageArray = Object.entries(messages).map(([key, msg]) => ({
+                    id: key,
+                    ...msg
+                })).sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                if (messageArray.length === 0) {
+                    messageList.innerHTML = '<p class="text-white-50">아직 축하 메세지가 없습니다. 첫 번째 메세지를 남겨보세요! 🎉</p>';
                     return;
                 }
                 
-                messages.forEach((msg) => {
+                messageArray.forEach((msg) => {
                     const messageDiv = document.createElement('div');
                     messageDiv.className = 'card mb-3';
-                    messageDiv.style = 'background: rgba(255,255,255,0.9); border: none;';
+                    messageDiv.style.cssText = 'background: rgba(255,255,255,0.95); border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+                    
+                    const createdDate = new Date(msg.timestamp);
+                    
                     messageDiv.innerHTML = `
-                        <div class="card-body">
+                        <div class="card-body text-start">
                             <div class="d-flex justify-content-between align-items-start">
                                 <div>
-                                    <h6 class="card-title text-dark mb-1">${msg.name}</h6>
-                                    <small class="text-muted">${new Date(msg.date).toLocaleDateString('ko-KR')}</small>
+                                    <h6 class="card-title text-dark mb-1">
+                                        <i class="fas fa-heart text-danger me-1"></i>${msg.name}
+                                    </h6>
+                                    <small class="text-muted">
+                                        <i class="fas fa-clock me-1"></i>${createdDate.toLocaleDateString('ko-KR')} 
+                                        ${createdDate.toLocaleTimeString('ko-KR', {hour: '2-digit', minute: '2-digit'})}
+                                    </small>
                                 </div>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteMessage('${msg.id}')">
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteMessage('${msg.id}', '${msg.password}')">
                                     <i class="fas fa-trash-alt"></i>
                                 </button>
                             </div>
@@ -447,99 +425,53 @@
                 
                 const submitButton = this.querySelector('button[type="submit"]');
                 const originalText = submitButton.textContent;
-                submitButton.textContent = '등록 중...';
+                submitButton.textContent = '등록중...';
                 submitButton.disabled = true;
                 
                 try {
-                    const newMessage = {
-                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+                    // Firebase에 메세지 저장
+                    const newMessageRef = messagesRef.push();
+                    await newMessageRef.set({
                         name: name,
                         message: message,
-                        password: password,
-                        date: new Date().toISOString()
-                    };
-                    
-                    // 현재 메시지 목록에 추가
-                    const updatedMessages = [newMessage, ...messages];
-                    
-                    // 서버에 저장 시도
-                    const serverSaved = await saveMessagesToServer(updatedMessages);
-                    
-                    if (serverSaved) {
-                        // 서버 저장 성공 시
-                        messages = updatedMessages;
-                        localStorage.setItem('weddingMessages', JSON.stringify(messages));
-                        displayMessages();
-                        alert('축하 메시지가 등록되었습니다!\\n\\n모든 사용자가 볼 수 있습니다. 🎉');
-                    } else {
-                        // 서버 저장 실패 시 로컬만 저장
-                        const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                        localMessages.unshift(newMessage);
-                        localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
-                        messages = localMessages;
-                        displayMessages();
-                        alert('축하 메시지가 등록되었습니다!\\n\\n※ 현재 브라우저에만 저장되었습니다.');
-                    }
+                        password: password, // 실제 서비스에서는 해시화 필요
+                        timestamp: new Date().toISOString()
+                    });
                     
                     // 폼 초기화
                     document.getElementById('messageForm').reset();
+                    alert('축하 메세지가 등록되었습니다! 🎉\n모든 분들이 실시간으로 확인할 수 있습니다.');
                     
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('메시지 등록에 실패했습니다.');
+                    console.error('메세지 등록 실패:', error);
+                    alert('메세지 등록에 실패했습니다. 다시 시도해주세요.');
                 } finally {
                     submitButton.textContent = originalText;
                     submitButton.disabled = false;
                 }
             });
             
-            // 메세지 삭제 함수를 전역으로 정의
-            window.deleteMessage = async function(messageId) {
-                const password = prompt('메세지를 삭제하려면 비밀번호를 입력하세요:');
+            // 메세지 삭제
+            window.deleteMessage = async function(messageId, originalPassword) {
+                const password = prompt('삭제하려면 비밀번호를 입력하세요:');
                 if (!password) return;
                 
+                if (password !== originalPassword) {
+                    alert('비밀번호가 올바르지 않습니다.');
+                    return;
+                }
+                
                 try {
-                    const messageIndex = messages.findIndex(msg => msg.id === messageId);
-                    
-                    if (messageIndex !== -1 && messages[messageIndex].password === password) {
-                        // 메시지 목록에서 제거
-                        const updatedMessages = messages.filter(msg => msg.id !== messageId);
-                        
-                        // 서버에 저장 시도
-                        const serverSaved = await saveMessagesToServer(updatedMessages);
-                        
-                        if (serverSaved) {
-                            // 서버 저장 성공 시
-                            messages = updatedMessages;
-                            localStorage.setItem('weddingMessages', JSON.stringify(messages));
-                            displayMessages();
-                            alert('메세지가 삭제되었습니다.');
-                        } else {
-                            // 서버 저장 실패 시 로컬만 삭제
-                            const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                            const localIndex = localMessages.findIndex(msg => msg.id === messageId);
-                            if (localIndex !== -1) {
-                                localMessages.splice(localIndex, 1);
-                                localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
-                                messages = localMessages;
-                                displayMessages();
-                                alert('메세지가 삭제되었습니다. (로컬에서만)');
-                            }
-                        }
-                    } else {
-                        alert('비밀번호가 올바르지 않습니다.');
-                    }
+                    await messagesRef.child(messageId).remove();
+                    alert('메세지가 삭제되었습니다.');
                 } catch (error) {
-                    console.error('Error:', error);
-                    alert('메세지 삭제에 실패했습니다.');
+                    console.error('메세지 삭제 실패:', error);
+                    alert('메세지 삭제에 실패했습니다. 다시 시도해주세요.');
                 }
             };
             
-            // 페이지 로드 시 메시지 로드
-            loadMessages();
-            
-            // 10초마다 새 메시지 확인
-            setInterval(loadMessages, 10000);
+            // Firebase 초기화
+            initializeFirebase();
             
             const musicToggle = document.getElementById('musicToggle');
             const backgroundMusic = document.getElementById('backgroundMusic');

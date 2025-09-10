@@ -319,20 +319,38 @@
                 });
             });
             
-            // 축하메세지 관리 (GitHub Gist API 사용)
+            // 축하메세지 관리 (JSONBin.io 사용)
             let messages = [];
-            const GIST_ID = 'wedding-messages-2024'; // 고유한 Gist ID
-            const GITHUB_TOKEN = ''; // 필요시 설정
+            const JSONBIN_BIN_ID = '673ffc31acd3cb34a8af41ce'; // JSONBin.io Bin ID
+            const JSONBIN_ACCESS_KEY = '$2a$10$H9eKr4CjDjxfU8vJQEaLWOAKO3TZo9tn.L2nJdvE7VYg7QBX8x4Gq'; // JSONBin.io Access Key
             
-            // GitHub Gist에서 메시지 가져오기
+            // JSONBin에서 메시지 가져오기
             async function loadMessages() {
                 try {
-                    // 로컬스토리지에서 먼저 로드
-                    const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                    messages = localMessages;
-                    displayMessages();
+                    console.log('Loading messages from JSONBin...');
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}/latest`, {
+                        headers: {
+                            'X-Access-Key': JSONBIN_ACCESS_KEY
+                        }
+                    });
                     
-                    // 더미 온라인 메시지 추가 (GitHub Pages 데모용)
+                    if (response.ok) {
+                        const data = await response.json();
+                        messages = data.record || [];
+                        console.log('Loaded messages:', messages);
+                        displayMessages();
+                        
+                        // 로컬스토리지에도 백업 저장
+                        localStorage.setItem('weddingMessages', JSON.stringify(messages));
+                    } else {
+                        throw new Error('Failed to load from JSONBin');
+                    }
+                } catch (error) {
+                    console.error('Error loading from JSONBin:', error);
+                    // JSONBin 실패 시 로컬스토리지에서 로드
+                    const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
+                    
+                    // 첫 방문자를 위한 데모 메시지
                     if (localMessages.length === 0) {
                         const demoMessages = [
                             {
@@ -350,16 +368,36 @@
                                 date: new Date(Date.now() - 7200000).toISOString()
                             }
                         ];
-                        
-                        // 로컬스토리지에 데모 메시지 저장
-                        localStorage.setItem('weddingMessages', JSON.stringify(demoMessages));
                         messages = demoMessages;
-                        displayMessages();
+                        localStorage.setItem('weddingMessages', JSON.stringify(demoMessages));
+                    } else {
+                        messages = localMessages;
+                    }
+                    displayMessages();
+                }
+            }
+            
+            // JSONBin에 메시지 저장
+            async function saveMessagesToServer(messagesData) {
+                try {
+                    const response = await fetch(`https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-Access-Key': JSONBIN_ACCESS_KEY
+                        },
+                        body: JSON.stringify(messagesData)
+                    });
+                    
+                    if (response.ok) {
+                        console.log('Messages saved to JSONBin successfully');
+                        return true;
+                    } else {
+                        throw new Error('Failed to save to JSONBin');
                     }
                 } catch (error) {
-                    console.log('Loading from localStorage only');
-                    messages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                    displayMessages();
+                    console.error('Error saving to JSONBin:', error);
+                    return false;
                 }
             }
             
@@ -413,8 +451,6 @@
                 submitButton.disabled = true;
                 
                 try {
-                    // 로컬스토리지에 저장
-                    const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
                     const newMessage = {
                         id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                         name: name,
@@ -422,17 +458,32 @@
                         password: password,
                         date: new Date().toISOString()
                     };
-                    localMessages.unshift(newMessage);
-                    localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
                     
-                    // 현재 화면 업데이트
-                    messages = localMessages;
-                    displayMessages();
+                    // 현재 메시지 목록에 추가
+                    const updatedMessages = [newMessage, ...messages];
+                    
+                    // 서버에 저장 시도
+                    const serverSaved = await saveMessagesToServer(updatedMessages);
+                    
+                    if (serverSaved) {
+                        // 서버 저장 성공 시
+                        messages = updatedMessages;
+                        localStorage.setItem('weddingMessages', JSON.stringify(messages));
+                        displayMessages();
+                        alert('축하 메시지가 등록되었습니다!\\n\\n모든 사용자가 볼 수 있습니다. 🎉');
+                    } else {
+                        // 서버 저장 실패 시 로컬만 저장
+                        const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
+                        localMessages.unshift(newMessage);
+                        localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
+                        messages = localMessages;
+                        displayMessages();
+                        alert('축하 메시지가 등록되었습니다!\\n\\n※ 현재 브라우저에만 저장되었습니다.');
+                    }
                     
                     // 폼 초기화
                     document.getElementById('messageForm').reset();
                     
-                    alert('축하 메시지가 등록되었습니다!\\n\\n※ GitHub Pages에서는 각 브라우저마다 독립적으로 저장됩니다.');
                 } catch (error) {
                     console.error('Error:', error);
                     alert('메시지 등록에 실패했습니다.');
@@ -443,24 +494,38 @@
             });
             
             // 메세지 삭제 함수를 전역으로 정의
-            window.deleteMessage = function(messageId) {
+            window.deleteMessage = async function(messageId) {
                 const password = prompt('메세지를 삭제하려면 비밀번호를 입력하세요:');
                 if (!password) return;
                 
                 try {
-                    // 로컬스토리지에서 삭제
-                    const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                    const messageIndex = localMessages.findIndex(msg => msg.id === messageId);
+                    const messageIndex = messages.findIndex(msg => msg.id === messageId);
                     
-                    if (messageIndex !== -1 && localMessages[messageIndex].password === password) {
-                        localMessages.splice(messageIndex, 1);
-                        localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
+                    if (messageIndex !== -1 && messages[messageIndex].password === password) {
+                        // 메시지 목록에서 제거
+                        const updatedMessages = messages.filter(msg => msg.id !== messageId);
                         
-                        // 현재 화면 업데이트
-                        messages = localMessages;
-                        displayMessages();
+                        // 서버에 저장 시도
+                        const serverSaved = await saveMessagesToServer(updatedMessages);
                         
-                        alert('메세지가 삭제되었습니다.');
+                        if (serverSaved) {
+                            // 서버 저장 성공 시
+                            messages = updatedMessages;
+                            localStorage.setItem('weddingMessages', JSON.stringify(messages));
+                            displayMessages();
+                            alert('메세지가 삭제되었습니다.');
+                        } else {
+                            // 서버 저장 실패 시 로컬만 삭제
+                            const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
+                            const localIndex = localMessages.findIndex(msg => msg.id === messageId);
+                            if (localIndex !== -1) {
+                                localMessages.splice(localIndex, 1);
+                                localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
+                                messages = localMessages;
+                                displayMessages();
+                                alert('메세지가 삭제되었습니다. (로컬에서만)');
+                            }
+                        }
                     } else {
                         alert('비밀번호가 올바르지 않습니다.');
                     }
@@ -472,6 +537,9 @@
             
             // 페이지 로드 시 메시지 로드
             loadMessages();
+            
+            // 10초마다 새 메시지 확인
+            setInterval(loadMessages, 10000);
             
             const musicToggle = document.getElementById('musicToggle');
             const backgroundMusic = document.getElementById('backgroundMusic');

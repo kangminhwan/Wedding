@@ -319,29 +319,22 @@
                 });
             });
             
-            // 축하메세지 관리 (서버 API 사용)
+            // 축하메세지 관리 (BroadcastChannel 사용)
             let messages = [];
+            const messageChannel = new BroadcastChannel('wedding-messages');
             
-            // 서버에서 메시지 가져오기
-            async function loadMessages() {
-                try {
-                    const response = await fetch('api.php');
-                    if (response.ok) {
-                        messages = await response.json();
-                        displayMessages();
-                    } else {
-                        console.error('Failed to load messages');
-                        // 로컬스토리지 fallback
-                        messages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                        displayMessages();
-                    }
-                } catch (error) {
-                    console.error('Error loading messages:', error);
-                    // 로컬스토리지 fallback
-                    messages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
-                    displayMessages();
-                }
+            // 로컬스토리지에서 메시지 가져오기
+            function loadMessages() {
+                messages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
+                displayMessages();
             }
+            
+            // 다른 탭에서 메시지 업데이트 받기
+            messageChannel.addEventListener('message', function(event) {
+                if (event.data.type === 'messageUpdate') {
+                    loadMessages(); // 로컬스토리지 다시 읽기
+                }
+            });
             
             function displayMessages() {
                 const messageList = document.getElementById('messageList');
@@ -375,7 +368,7 @@
             }
             
             // 메세지 추가
-            document.getElementById('messageForm').addEventListener('submit', async function(e) {
+            document.getElementById('messageForm').addEventListener('submit', function(e) {
                 e.preventDefault();
                 
                 const name = document.getElementById('userName').value.trim();
@@ -393,37 +386,10 @@
                 submitButton.disabled = true;
                 
                 try {
-                    const response = await fetch('api.php', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            name: name,
-                            message: message,
-                            password: password
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        // 폼 초기화
-                        document.getElementById('messageForm').reset();
-                        
-                        // 메시지 목록 새로고침
-                        await loadMessages();
-                        
-                        alert('축하 메시지가 등록되었습니다!');
-                    } else {
-                        alert('메시지 등록에 실패했습니다: ' + result.message);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    // 서버 오류 시 로컬스토리지에 저장
+                    // 로컬스토리지에 저장
                     const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
                     const newMessage = {
-                        id: Date.now().toString(),
+                        id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
                         name: name,
                         message: message,
                         password: password,
@@ -431,9 +397,25 @@
                     };
                     localMessages.unshift(newMessage);
                     localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
+                    
+                    // 현재 탭 업데이트
                     messages = localMessages;
                     displayMessages();
-                    alert('축하 메시지가 등록되었습니다! (로컬 저장)');
+                    
+                    // 다른 탭들에게 업데이트 알림
+                    messageChannel.postMessage({ 
+                        type: 'messageUpdate',
+                        action: 'add',
+                        message: newMessage 
+                    });
+                    
+                    // 폼 초기화
+                    document.getElementById('messageForm').reset();
+                    
+                    alert('축하 메시지가 등록되었습니다!');
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('메시지 등록에 실패했습니다.');
                 } finally {
                     submitButton.textContent = originalText;
                     submitButton.disabled = false;
@@ -441,52 +423,42 @@
             });
             
             // 메세지 삭제 함수를 전역으로 정의
-            window.deleteMessage = async function(messageId) {
+            window.deleteMessage = function(messageId) {
                 const password = prompt('메세지를 삭제하려면 비밀번호를 입력하세요:');
                 if (!password) return;
                 
                 try {
-                    const response = await fetch('api.php', {
-                        method: 'DELETE',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            id: messageId,
-                            password: password
-                        })
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        await loadMessages();
-                        alert('메세지가 삭제되었습니다.');
-                    } else {
-                        alert('삭제 실패: ' + result.message);
-                    }
-                } catch (error) {
-                    console.error('Error:', error);
-                    // 로컬스토리지에서 삭제 시도
+                    // 로컬스토리지에서 삭제
                     const localMessages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
                     const messageIndex = localMessages.findIndex(msg => msg.id === messageId);
+                    
                     if (messageIndex !== -1 && localMessages[messageIndex].password === password) {
                         localMessages.splice(messageIndex, 1);
                         localStorage.setItem('weddingMessages', JSON.stringify(localMessages));
+                        
+                        // 현재 탭 업데이트
                         messages = localMessages;
                         displayMessages();
+                        
+                        // 다른 탭들에게 업데이트 알림
+                        messageChannel.postMessage({ 
+                            type: 'messageUpdate',
+                            action: 'delete',
+                            messageId: messageId 
+                        });
+                        
                         alert('메세지가 삭제되었습니다.');
                     } else {
                         alert('비밀번호가 올바르지 않습니다.');
                     }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('메세지 삭제에 실패했습니다.');
                 }
             };
             
             // 페이지 로드 시 메시지 로드
             loadMessages();
-            
-            // 5초마다 새 메시지 확인
-            setInterval(loadMessages, 5000);
             
             const musicToggle = document.getElementById('musicToggle');
             const backgroundMusic = document.getElementById('backgroundMusic');

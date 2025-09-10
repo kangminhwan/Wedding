@@ -11358,3 +11358,71 @@ body {
 .footer {
   padding: 5rem 0;
 }
+
+/* 이미지 팝업 및 축하메세지 커스텀 스타일 */
+#projects img, #about img {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+#projects img:hover, #about img:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.modal-content {
+  background: transparent !important;
+  border: none !important;
+}
+
+#modalImage {
+  max-height: 90vh;
+  object-fit: contain;
+}
+
+/* 축하메세지 섹션 스타일 */
+#congratulations {
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.1) 0%, rgba(0, 0, 0, 0.5) 50%, rgba(0, 0, 0, 0.1) 100%), url("../assets/img/bg-masthead.jpg");
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  background-size: cover;
+}
+
+#congratulations .card {
+  backdrop-filter: blur(10px);
+  border-radius: 15px !important;
+}
+
+#congratulations .form-control {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(100, 161, 157, 0.3);
+  border-radius: 8px;
+}
+
+#congratulations .form-control:focus {
+  background: rgba(255, 255, 255, 0.95);
+  border-color: #64a19d;
+  box-shadow: 0 0 0 0.2rem rgba(100, 161, 157, 0.25);
+}
+
+#messageList .card {
+  backdrop-filter: blur(5px);
+  border-radius: 10px !important;
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.btn-outline-danger:hover {
+  background-color: #dc3545;
+  border-color: #dc3545;
+}

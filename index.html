@@ -56,8 +56,8 @@
                     <ul class="navbar-nav ms-auto">
                         <li class="nav-item"><a class="nav-link" href="#about">인사말</a></li>
                         <li class="nav-item"><a class="nav-link" href="#projects">갤러리</a></li>
+                        <li class="nav-item"><a class="nav-link" href="#congratulations">축하메세지</a></li>
                         <li class="nav-item"><a class="nav-link" href="#location">오시는 길</a></li>
-                        <li class="nav-item"><a class="nav-link" href="#signup">연락처</a></li>
                     </ul>
                 </div>
             </div>
@@ -140,6 +140,21 @@
                 </div>
             </div>
         </section>
+        
+        <!-- 이미지 팝업 모달 -->
+        <div class="modal fade" id="imageModal" tabindex="-1" aria-labelledby="imageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg modal-dialog-centered">
+                <div class="modal-content bg-transparent border-0">
+                    <div class="modal-header border-0">
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body p-0">
+                        <img id="modalImage" src="" alt="" class="img-fluid w-100 rounded">
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- 동영상 -->
         <section class="about-section text-center bg-black" id="videos">
             <div class="container px-4 px-lg-5">
@@ -165,6 +180,44 @@
                 </div>
             </div>
         </section>
+        
+        <!-- 축하 메세지 섹션 -->
+        <section class="about-section text-center" id="congratulations">
+            <div class="container px-4 px-lg-5">
+                <div class="row gx-4 gx-lg-5 justify-content-center">
+                    <div class="col-lg-8">
+                        <h2 class="text-white mb-4">축하 메세지</h2>
+                        <p class="text-white-50 mb-5">소중한 축하의 말씀을 남겨주세요.</p>
+                        
+                        <!-- 메세지 입력 폼 -->
+                        <div class="card mb-4" style="background: rgba(255,255,255,0.1); border: none;">
+                            <div class="card-body">
+                                <form id="messageForm">
+                                    <div class="row mb-3">
+                                        <div class="col-md-6">
+                                            <input type="text" class="form-control" id="userName" placeholder="이름" required>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <input type="password" class="form-control" id="userPassword" placeholder="비밀번호 (수정/삭제용)" required>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <textarea class="form-control" id="userMessage" rows="3" placeholder="축하 메세지를 입력해주세요" required></textarea>
+                                    </div>
+                                    <button type="submit" class="btn btn-primary">메세지 등록</button>
+                                </form>
+                            </div>
+                        </div>
+                        
+                        <!-- 메세지 목록 -->
+                        <div id="messageList" class="text-start">
+                            <!-- 메세지들이 여기에 표시됩니다 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+        
         <!-- 오시는 길 -->
         <section class="contact-section bg-light" id="location">
             <div class="container px-4 px-lg-5">
@@ -203,50 +256,6 @@
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-        <!-- Signup-->
-        <section class="signup-section" id="signup">
-            <div class="container px-4 px-lg-5">
-                <div class="row gx-4 gx-lg-5">
-                    <div class="col-md-10 col-lg-8 mx-auto text-center">
-                        <i class="far fa-paper-plane fa-2x mb-2 text-white"></i>
-                        <h2 class="text-white mb-5">축하 메시지를 보내주세요!</h2>
-                        <!-- * * * * * * * * * * * * * * *-->
-                        <!-- * * SB Forms Contact Form * *-->
-                        <!-- * * * * * * * * * * * * * * *-->
-                        <!-- This form is pre-integrated with SB Forms.-->
-                        <!-- To make this form functional, sign up at-->
-                        <!-- https://startbootstrap.com/solution/contact-forms-->
-                        <!-- to get an API token!-->
-                        <form class="form-signup" id="contactForm" data-sb-form-api-token="API_TOKEN">
-                            <!-- Email address input-->
-                            <div class="row input-group-newsletter">
-                                <div class="col"><input class="form-control" id="emailAddress" type="email" placeholder="이메일 주소를 입력하세요..." aria-label="이메일 주소 입력" data-sb-validations="required,email" /></div>
-                                <div class="col-auto"><button class="btn btn-primary disabled" id="submitButton" type="submit">축하 메시지 보내기!</button></div>
-                            </div>
-                            <div class="invalid-feedback mt-2" data-sb-feedback="emailAddress:required">이메일 주소가 필요합니다.</div>
-                            <div class="invalid-feedback mt-2" data-sb-feedback="emailAddress:email">올바른 이메일 형식이 아닙니다.</div>
-                            <!-- Submit success message-->
-                            <!---->
-                            <!-- This is what your users will see when the form-->
-                            <!-- has successfully submitted-->
-                            <div class="d-none" id="submitSuccessMessage">
-                                <div class="text-center mb-3 mt-2 text-white">
-                                    <div class="fw-bolder">Form submission successful!</div>
-                                    To activate this form, sign up at
-                                    <br />
-                                    <a href="https://startbootstrap.com/solution/contact-forms">https://startbootstrap.com/solution/contact-forms</a>
-                                </div>
-                            </div>
-                            <!-- Submit error message-->
-                            <!---->
-                            <!-- This is what your users will see when there is-->
-                            <!-- an error submitting the form-->
-                            <div class="d-none" id="submitErrorMessage"><div class="text-center text-danger mb-3 mt-2">Error sending message!</div></div>
-                        </form>
                     </div>
                 </div>
             </div>
@@ -295,6 +304,95 @@
         <!-- 배경음악 플레이어 JS -->
         <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // 이미지 팝업 기능
+            const images = document.querySelectorAll('#projects img, #about img');
+            const modal = document.getElementById('imageModal');
+            const modalImage = document.getElementById('modalImage');
+            
+            images.forEach(img => {
+                img.style.cursor = 'pointer';
+                img.addEventListener('click', function() {
+                    modalImage.src = this.src;
+                    modalImage.alt = this.alt;
+                    const imageModal = new bootstrap.Modal(modal);
+                    imageModal.show();
+                });
+            });
+            
+            // 축하메세지 관리
+            let messages = JSON.parse(localStorage.getItem('weddingMessages')) || [];
+            
+            function displayMessages() {
+                const messageList = document.getElementById('messageList');
+                messageList.innerHTML = '';
+                
+                messages.forEach((msg, index) => {
+                    const messageDiv = document.createElement('div');
+                    messageDiv.className = 'card mb-3';
+                    messageDiv.style = 'background: rgba(255,255,255,0.9); border: none;';
+                    messageDiv.innerHTML = `
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="card-title text-dark mb-1">${msg.name}</h6>
+                                    <small class="text-muted">${new Date(msg.date).toLocaleDateString('ko-KR')}</small>
+                                </div>
+                                <button class="btn btn-sm btn-outline-danger" onclick="deleteMessage(${index})">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                            <p class="card-text text-dark mt-2">${msg.message}</p>
+                        </div>
+                    `;
+                    messageList.appendChild(messageDiv);
+                });
+            }
+            
+            // 메세지 추가
+            document.getElementById('messageForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                const name = document.getElementById('userName').value;
+                const password = document.getElementById('userPassword').value;
+                const message = document.getElementById('userMessage').value;
+                
+                if (name && password && message) {
+                    const newMessage = {
+                        name: name,
+                        message: message,
+                        password: password,
+                        date: new Date().toISOString()
+                    };
+                    
+                    messages.unshift(newMessage); // 최신 메세지가 위로
+                    localStorage.setItem('weddingMessages', JSON.stringify(messages));
+                    
+                    // 폼 초기화
+                    document.getElementById('messageForm').reset();
+                    
+                    // 메세지 목록 업데이트
+                    displayMessages();
+                    
+                    alert('축하 메세지가 등록되었습니다!');
+                }
+            });
+            
+            // 메세지 삭제 함수를 전역으로 정의
+            window.deleteMessage = function(index) {
+                const password = prompt('메세지를 삭제하려면 비밀번호를 입력하세요:');
+                if (password && password === messages[index].password) {
+                    messages.splice(index, 1);
+                    localStorage.setItem('weddingMessages', JSON.stringify(messages));
+                    displayMessages();
+                    alert('메세지가 삭제되었습니다.');
+                } else if (password) {
+                    alert('비밀번호가 올바르지 않습니다.');
+                }
+            };
+            
+            // 페이지 로드 시 메세지 표시
+            displayMessages();
+            
             const musicToggle = document.getElementById('musicToggle');
             const backgroundMusic = document.getElementById('backgroundMusic');
             const musicIcon = document.getElementById('musicIcon');
